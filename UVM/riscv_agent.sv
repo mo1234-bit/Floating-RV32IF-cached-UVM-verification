@@ -1,10 +1,4 @@
-// =============================================================================
-// riscv_agent.sv  –  UVM Agent
-// Reads riscv_env_config and propagates it to driver + monitor.
-// =============================================================================
-
 `include "uvm_macros.svh"
-
 import uvm_pkg::*;import riscv_pkg::*;
 class riscv_agent extends uvm_agent;
     `uvm_component_utils(riscv_agent)
@@ -39,8 +33,6 @@ class riscv_agent extends uvm_agent;
         end
         monitor = riscv_monitor::type_id::create("monitor", this);
     endfunction
-
-    // -----------------------------------------------------------------------
     function void connect_phase(uvm_phase phase);
         if (cfg.agent_mode == UVM_ACTIVE)
             driver.seq_item_port.connect(sequencer.seq_item_export);
