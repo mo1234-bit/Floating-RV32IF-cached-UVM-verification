@@ -1,10 +1,7 @@
 `include "uvm_macros.svh"
 import riscv_pkg::*;
 import uvm_pkg::*;
-// =============================================================================
-// riscv_seq_item.sv  –  Updated UVM Sequence Item
-// Supports BOTH random program generation AND hex file loading.
-// =============================================================================
+
 class riscv_seq_item extends uvm_sequence_item;
     `uvm_object_utils(riscv_seq_item)
 

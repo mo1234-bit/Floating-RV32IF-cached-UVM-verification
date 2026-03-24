@@ -1,19 +1,9 @@
-`timescale 1ns/1ps// =============================================================================
-// riscv_if.sv  –  Virtual Interface for RISC-V Pipeline
-// Exposes primary I/O plus internal probe points needed by monitor/scoreboard.
-// =============================================================================
+`timescale 1ns/1ps
 interface riscv_if (input logic clk);
 
-    // -------------------------------------------------------------------------
-    // Primary DUT ports
-    // -------------------------------------------------------------------------
     logic        rst_n;
     logic [15:0] Result;
 
-    // -------------------------------------------------------------------------
-    // Pipeline stage probes  (driven by hierarchical references in tb_top)
-    // -------------------------------------------------------------------------
-    // Fetch stage
     logic [31:0] InstrD;
     logic [31:0] PCD;
     logic [31:0] PCPlus4D;
@@ -51,10 +41,7 @@ interface riscv_if (input logic clk);
     // Floating-point write-back
     logic        FRegWriteMW;
     logic [31:0] FResultW;
-    logic [4:0]  FRdW;          // BUG 7 FIX: FP destination register (separate from RDW)
-
-    // FP operation decode signals (needed by cg_fpu coverage group)
-    // BUG 3 FIX: These were assigned in tb_top but missing from interface declaration
+    logic [4:0]  FRdW;       
     logic        faddE;
     logic        fsubE;
     logic        fmulE;
@@ -66,9 +53,7 @@ interface riscv_if (input logic clk);
     // Cache state
     logic [2:0]  cache_state;
 
-    // -------------------------------------------------------------------------
-    // Clocking blocks
-    // -------------------------------------------------------------------------
+  
     clocking drv_cb @(posedge clk);
         default input #1 output #1;
         output rst_n;
@@ -107,9 +92,7 @@ interface riscv_if (input logic clk);
         input fstoreE;
     endclocking
 
-    // -------------------------------------------------------------------------
-    // Modports
-    // -------------------------------------------------------------------------
+   
     modport DRV (clocking drv_cb, input clk);
     modport MON (clocking mon_cb, input clk);
 

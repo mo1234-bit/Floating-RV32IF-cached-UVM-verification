@@ -1,5 +1,7 @@
 `include "uvm_macros.svh"
-import uvm_pkg::*;import riscv_pkg::*;
+import uvm_pkg::*;
+import riscv_pkg::*;
+
 class riscv_agent extends uvm_agent;
     `uvm_component_utils(riscv_agent)
 
@@ -13,7 +15,7 @@ class riscv_agent extends uvm_agent;
         super.new(name, parent);
     endfunction
 
-    // -----------------------------------------------------------------------
+   
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
 

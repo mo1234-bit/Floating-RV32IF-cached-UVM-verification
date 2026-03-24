@@ -1,22 +1,14 @@
-// =============================================================================
-// riscv_pkg.sv  –  UVM Package
-// Import this package in your testbench top.
-// =============================================================================
 package riscv_pkg;
 
     import uvm_pkg::*;
     `include "uvm_macros.svh"
 
-    // -----------------------------------------------------------------------
-    // Global events used to hand-shake program loading between driver & tb_top
-    // -----------------------------------------------------------------------
-    event load_program_ev;      // driver → tb_top: "please load this hex file"
-    event program_loaded_ev;    // tb_top → driver: "done loading"
+  
+    event load_program_ev;      // driver → tb_top
+    event program_loaded_ev;    // tb_top → driver
 
-    // -----------------------------------------------------------------------
-    // Include order matters: items before classes that use them
-    // -----------------------------------------------------------------------
-    `include "riscv_config.sv"    // config object — included first
+   
+    `include "riscv_config.sv"   
     `include "riscv_seq_item.sv"
     `include "riscv_instr.sv"         // per-instruction randomized classes
     `include "riscv_progrem_gen.sv"   // constrained-random program builder

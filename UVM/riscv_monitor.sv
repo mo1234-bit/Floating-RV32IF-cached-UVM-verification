@@ -1,15 +1,7 @@
 
 `include "uvm_macros.svh"
 import riscv_pkg::*;
-import uvm_pkg::*;// =============================================================================
-// riscv_monitor.sv  –  UVM Monitor
-// Reads riscv_env_config to control what gets logged and tracked.
-// =============================================================================
-
-// =============================================================================
-// riscv_monitor.sv  –  UVM Monitor
-// Reads riscv_env_config to control what gets logged and tracked.
-// =============================================================================
+import uvm_pkg::*;
 
 class reg_write_txn extends uvm_sequence_item;
     `uvm_object_utils(reg_write_txn)

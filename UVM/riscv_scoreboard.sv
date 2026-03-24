@@ -1,10 +1,8 @@
 
 `include "uvm_macros.svh"
 import riscv_pkg::*;
-import uvm_pkg::*;// =============================================================================
-// riscv_scoreboard.sv  –  UVM Scoreboard
-// Reads riscv_env_config to know which checks are enabled.
-// =============================================================================
+import uvm_pkg::*;
+
 class riscv_scoreboard extends uvm_scoreboard;
     `uvm_component_utils(riscv_scoreboard)
 

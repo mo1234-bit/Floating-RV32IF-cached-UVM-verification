@@ -1,20 +1,8 @@
 
 `include "uvm_macros.svh"
 import riscv_pkg::*;
-import uvm_pkg::*;// =============================================================================
-// riscv_tests.sv  –  UVM Test Classes
-//
-// Every test follows the same 4-step pattern in build_phase:
-//   1. Create riscv_env_config
-//   2. Get vif from config_db and assign to cfg.vif
-//   3. Set all knobs on the config object
-//   4. Call cfg.validate() then push it into config_db BEFORE super.build_phase
-//      so the env and all sub-components see it during their build_phase.
-// =============================================================================
+import uvm_pkg::*;
 
-// ---------------------------------------------------------------------------
-// Base test
-// ---------------------------------------------------------------------------
 class riscv_base_test extends uvm_test;
     `uvm_component_utils(riscv_base_test)
 
@@ -25,32 +13,20 @@ class riscv_base_test extends uvm_test;
         super.new(name, parent);
     endfunction
 
-    // ------------------------------------------------------------------
-    // build_phase
-    // Child tests call super.build_phase AFTER setting cfg fields so
-    // the env already sees the fully configured object.
-    // ------------------------------------------------------------------
     function void build_phase(uvm_phase phase);
        
-
-        // 1. Create config object
         cfg = riscv_env_config::type_id::create("cfg");
 
-        // 2. Pull vif from config_db (set by tb_top)
         if (!uvm_config_db #(virtual riscv_if)::get(this, "", "vif", vif))
             `uvm_fatal("NOVIF", "riscv_base_test: vif not in config_db")
         cfg.vif = vif;
 
-        // 3. Apply defaults — child overrides these before calling super
         apply_config();
 
-        // 4. Validate knobs
         cfg.validate();
 
-        // 5. Push into config_db so env + all children can get it
         uvm_config_db #(riscv_env_config)::set(this, "env*", "cfg", cfg);
 
-        // 6. Now build env (it will find cfg in config_db)
         super.build_phase(phase);
         env = riscv_env::type_id::create("env", this);
     endfunction

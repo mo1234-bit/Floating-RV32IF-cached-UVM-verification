@@ -1,18 +1,11 @@
 `include "uvm_macros.svh"
 import riscv_pkg::*;
 import uvm_pkg::*;
-// =============================================================================
-// riscv_program_gen.sv  –  Constrained-Random Program Generator
-// Builds a complete randomized instruction stream, resolves branch targets,
-// initializes base registers, and writes the program to instruction memory
-// via backdoor ($readmemh or direct array write).
-// =============================================================================
+
 class riscv_program_gen extends uvm_object;
     `uvm_object_utils(riscv_program_gen)
 
-    // -----------------------------------------------------------------------
-    // Configuration knobs  (set before calling generate_program)
-    // -----------------------------------------------------------------------
+   
     int unsigned num_instrs     = 50;     // total instructions to generate
     int unsigned data_base_reg  = 8;      // x8 used as base for loads/stores
     int unsigned data_base_addr = 32'h10000000; // byte address of data region
@@ -28,9 +21,6 @@ class riscv_program_gen extends uvm_object;
     int unsigned w_fp_mem    = 5;
     // remaining weight → NOP
 
-    // -----------------------------------------------------------------------
-    // Generated program
-    // -----------------------------------------------------------------------
     logic [31:0] program_mem[];     // instruction words
     int unsigned actual_len;        // may differ from num_instrs after fixup
     int unsigned written_offsets[$]; // offsets written via stores (for safe load generation)
@@ -43,9 +33,7 @@ class riscv_program_gen extends uvm_object;
         super.new(name);
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Main entry point
-    // -----------------------------------------------------------------------
+  
     function void generate_program();
         int unsigned total_w;
         program_mem = new[num_instrs + 20];  // +20: prologue=14 + epilogue=3 + margin=3
@@ -75,9 +63,7 @@ class riscv_program_gen extends uvm_object;
             UVM_MEDIUM)
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Prologue: set up base pointer + a few known register values
-    // -----------------------------------------------------------------------
+   
     local function void emit_prologue();
         // LUI x8, data_base_addr[31:12]   → x8 = base address upper
         emit_word(lui_encode(data_base_reg, data_base_addr[31:12]),
@@ -95,8 +81,7 @@ class riscv_program_gen extends uvm_object;
                       $sformatf("ADDI   x%0d, x0, %0d", r, r));
         end
 
-        // Store a known float (1.0 = 0x3F800000) to data memory for FLW tests
-        // LUI x9, 0x3F800       → x9 = 0x3F800000
+      
         emit_word(lui_encode(9, 20'h3F800),    "LUI    x9, 0x3F800  # 1.0f");
         // SW  x9, 0(x8)
         emit_word(sw_encode(data_base_reg, 9, 12'd0),
@@ -112,11 +97,7 @@ class riscv_program_gen extends uvm_object;
         emit_word(flw_encode(1, data_base_reg, 12'd4), "FLW    f1, 4(x8)");
     endfunction
 
-    // -- Epilogue: write completion sentinel to x30 --
-    // Target: x30 = 0x0DEADBEF
-    // 0xBEF bit[11]=1 → sign-extends to 0xFFFFFBEF in ADDI.
-    // So LUI must load 0x0DEAE000 (0x0DEAE) to compensate:
-    //   0x0DEAE000 + 0xFFFFFBEF = 0x0DEADBEF  ✓
+   
     local function void emit_epilogue();
         // LUI x30, 0x0DEAE  (NOT 0x0DEAD — see comment above)
         emit_word(lui_encode(30, 20'h0DEAE),  "LUI    x30, 0x0DEAE  # sentinel hi (compensated)");
@@ -127,9 +108,7 @@ class riscv_program_gen extends uvm_object;
         emit_word(32'h0000006F,               "JAL    x0, 0  # infinite loop");
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Emit one randomly chosen instruction
-    // -----------------------------------------------------------------------
+   
     local function void emit_random_instr();
         int pick;
         pick = $urandom_range(0, 99);
@@ -145,9 +124,7 @@ class riscv_program_gen extends uvm_object;
         else    emit_nop();
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Instruction emitters
-    // -----------------------------------------------------------------------
+  
     local function void emit_r_type();
         riscv_r_instr instr = riscv_r_instr::type_id::create("r");
         if (!instr.randomize() with {

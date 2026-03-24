@@ -1,19 +1,9 @@
-// =============================================================================
-// riscv_instr.sv  –  Randomized RISC-V Instruction Classes
-// Each instruction type is a separate class with legal constraints.
-// =============================================================================
 
 `include "uvm_macros.svh"
 
-import uvm_pkg::*;import riscv_pkg::*;
-// =============================================================================
-// riscv_instr.sv  –  Randomized RISC-V Instruction Classes
-// Each instruction type is a separate class with legal constraints.
-// =============================================================================
+import uvm_pkg::*;
+import riscv_pkg::*;
 
-// ---------------------------------------------------------------------------
-// Encoding types
-// ---------------------------------------------------------------------------
 typedef enum logic [6:0] {
     OP_R      = 7'b0110011,   // ADD SUB AND OR XOR SLL SRL SRA SLT SLTU
     OP_I_ALU  = 7'b0010011,   // ADDI ANDI ORI XORI SLTI SLTIU SLLI SRLI SRAI
@@ -29,9 +19,6 @@ typedef enum logic [6:0] {
     OP_FSTORE = 7'b0100111    // FSW
 } opcode_e;
 
-// ---------------------------------------------------------------------------
-// Base instruction item
-// ---------------------------------------------------------------------------
 class riscv_instr extends uvm_object;
     `uvm_object_utils(riscv_instr)
 
@@ -63,9 +50,6 @@ class riscv_instr extends uvm_object;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// R-type:  ADD SUB AND OR XOR SLL SRL SRA SLT SLTU
-// ---------------------------------------------------------------------------
 class riscv_r_instr extends riscv_instr;
     `uvm_object_utils(riscv_r_instr)
 
@@ -106,9 +90,6 @@ class riscv_r_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// I-type ALU:  ADDI ANDI ORI XORI SLTI SLTIU SLLI SRLI SRAI
-// ---------------------------------------------------------------------------
 class riscv_i_alu_instr extends riscv_instr;
     `uvm_object_utils(riscv_i_alu_instr)
 
@@ -159,10 +140,7 @@ class riscv_i_alu_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// Load:  LB LH LW LBU LHU
-// Uses a base register + small offset into a safe memory region
-// ---------------------------------------------------------------------------
+
 class riscv_load_instr extends riscv_instr;
     `uvm_object_utils(riscv_load_instr)
 
@@ -192,9 +170,6 @@ class riscv_load_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// Store:  SB SH SW
-// ---------------------------------------------------------------------------
 class riscv_store_instr extends riscv_instr;
     `uvm_object_utils(riscv_store_instr)
 
@@ -268,9 +243,6 @@ class riscv_branch_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// LUI / AUIPC
-// ---------------------------------------------------------------------------
 class riscv_u_instr extends riscv_instr;
     `uvm_object_utils(riscv_u_instr)
 
@@ -294,9 +266,6 @@ class riscv_u_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// FP arithmetic:  FADD FSUB FMUL FDIV FSQRT
-// ---------------------------------------------------------------------------
 class riscv_fp_instr extends riscv_instr;
     `uvm_object_utils(riscv_fp_instr)
 
@@ -332,9 +301,6 @@ class riscv_fp_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// FP Load / Store  (FLW / FSW)
-// ---------------------------------------------------------------------------
 class riscv_fp_mem_instr extends riscv_instr;
     `uvm_object_utils(riscv_fp_mem_instr)
 

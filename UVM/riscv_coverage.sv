@@ -1,10 +1,11 @@
 `include "uvm_macros.svh"
-import uvm_pkg::*;import riscv_pkg::*;
+import uvm_pkg::*;
+import riscv_pkg::*;
 class riscv_coverage extends uvm_subscriber #(reg_write_txn);
     `uvm_component_utils(riscv_coverage)
 
     virtual riscv_if vif;
-    // ---------- Instruction opcode coverage ----------
+
     covergroup cg_opcodes;
         cp_opcode: coverpoint vif.InstrD[6:0] {
             bins R_type   = {7'b0110011};
@@ -23,7 +24,7 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
         }
     endgroup
 
-    // ---------- ALU operation coverage ----------
+
     covergroup cg_alu_ctrl;
         cp_ctrl: coverpoint vif.ALUControlE {
             bins ADD  = {4'b0000};
@@ -39,7 +40,7 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
         }
     endgroup
 
-    // ---------- Hazard / stall coverage ----------
+ 
     covergroup cg_hazards;
         cp_stall_f:   coverpoint vif.StallF    { bins stalled = {1}; bins free = {0}; }
         cp_stall_d:   coverpoint vif.StallD    { bins stalled = {1}; bins free = {0}; }
@@ -48,14 +49,13 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
         cx_stall_types: cross cp_stall_f, cp_stall_d, cp_fp_stall;
     endgroup
 
-    // ---------- Branch outcome coverage ----------
     covergroup cg_branch;
         cp_taken:     coverpoint vif.PCSrcE    { bins taken = {1}; bins not_taken = {0}; }
         cp_mispredict:coverpoint vif.mispredict{ bins mis = {1};   bins ok = {0}; }
         cx_branch: cross cp_taken, cp_mispredict;
     endgroup
 
-    // ---------- Cache state coverage ----------
+
     covergroup cg_cache;
         cp_state: coverpoint vif.cache_state {
             bins IDLE   = {3'd0};
@@ -68,7 +68,6 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
         }
     endgroup
 
-    // ---------- Register destination coverage ----------
     covergroup cg_rd_dest;
         cp_rd: coverpoint vif.RDW {
             bins zero     = {0};
@@ -83,7 +82,6 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
         }
     endgroup
 
-    // ---------- FP operation coverage ----------
     covergroup cg_fpu;
         cp_fadd:  coverpoint vif.faddE  { bins active = {1}; }
         cp_fsub:  coverpoint vif.fsubE  { bins active = {1}; }
@@ -94,7 +92,7 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
         cp_fstore:coverpoint vif.fstoreE{ bins active = {1}; }
     endgroup
 
-    // -----------------------------------------------------------------------
+   
     function new(string name, uvm_component parent);
         super.new(name, parent);
         // Safe: no vif access in covergroup body at construction time
