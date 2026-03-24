@@ -1,7 +1,3 @@
-// =============================================================================
-// tb_top.sv  –  UVM Testbench Top Module
-// Instantiates DUT + interface, starts UVM test, handles program loading.
-// =============================================================================
 `timescale 1ns/1ps
 
 `include "uvm_macros.svh"
