@@ -1,20 +1,9 @@
-
 `include "uvm_macros.svh"
-
-import uvm_pkg::*;import riscv_pkg::*;// =============================================================================
-// riscv_coverage.sv  -  Functional Coverage
-// Covergroups use explicit sample() calls from run_phase to avoid
-// SIGSEGV from vif-referenced triggers being evaluated before vif is set.
-// =============================================================================
+import uvm_pkg::*;import riscv_pkg::*;
 class riscv_coverage extends uvm_subscriber #(reg_write_txn);
     `uvm_component_utils(riscv_coverage)
 
     virtual riscv_if vif;
-
-    // -----------------------------------------------------------------------
-    // Covergroups — NO clock triggers here; sampled explicitly in run_phase.
-    // -----------------------------------------------------------------------
-
     // ---------- Instruction opcode coverage ----------
     covergroup cg_opcodes;
         cp_opcode: coverpoint vif.InstrD[6:0] {
@@ -129,9 +118,6 @@ class riscv_coverage extends uvm_subscriber #(reg_write_txn);
             `uvm_fatal("NOVIF", "riscv_coverage: cfg.vif is null")
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Explicit sampling loop — runs after vif is guaranteed non-null
-    // -----------------------------------------------------------------------
     task run_phase(uvm_phase phase);
         forever begin
             @(posedge vif.clk);
