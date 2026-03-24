@@ -1,10 +1,6 @@
-
 `include "uvm_macros.svh"
 import riscv_pkg::*;
-import uvm_pkg::*;// =============================================================================
-// riscv_env.sv  –  UVM Environment
-// Creates config object (if not already in db), builds sub-components.
-// =============================================================================
+import uvm_pkg::*;
 class riscv_env extends uvm_env;
     `uvm_component_utils(riscv_env)
 
