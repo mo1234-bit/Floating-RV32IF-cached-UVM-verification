@@ -1,8 +1,6 @@
-
 `include "uvm_macros.svh"
 
-import uvm_pkg::*;
-import riscv_pkg::*;
+import uvm_pkg::*;import riscv_pkg::*;
 
 typedef enum logic [6:0] {
     OP_R      = 7'b0110011,   // ADD SUB AND OR XOR SLL SRL SRA SLT SLTU
@@ -19,6 +17,9 @@ typedef enum logic [6:0] {
     OP_FSTORE = 7'b0100111    // FSW
 } opcode_e;
 
+// ---------------------------------------------------------------------------
+// Base instruction item
+// ---------------------------------------------------------------------------
 class riscv_instr extends uvm_object;
     `uvm_object_utils(riscv_instr)
 
@@ -49,6 +50,7 @@ class riscv_instr extends uvm_object;
     endfunction
 
 endclass
+
 
 class riscv_r_instr extends riscv_instr;
     `uvm_object_utils(riscv_r_instr)
@@ -89,6 +91,7 @@ class riscv_r_instr extends riscv_instr;
     endfunction
 
 endclass
+
 
 class riscv_i_alu_instr extends riscv_instr;
     `uvm_object_utils(riscv_i_alu_instr)
@@ -170,6 +173,7 @@ class riscv_load_instr extends riscv_instr;
 
 endclass
 
+
 class riscv_store_instr extends riscv_instr;
     `uvm_object_utils(riscv_store_instr)
 
@@ -201,10 +205,7 @@ class riscv_store_instr extends riscv_instr;
 
 endclass
 
-// ---------------------------------------------------------------------------
-// Branch:  BEQ BNE BLT BGE BLTU BGEU
-// Offset is constrained to ±64 bytes (forward + backward, word-aligned)
-// ---------------------------------------------------------------------------
+
 class riscv_branch_instr extends riscv_instr;
     `uvm_object_utils(riscv_branch_instr)
 
@@ -243,6 +244,7 @@ class riscv_branch_instr extends riscv_instr;
 
 endclass
 
+
 class riscv_u_instr extends riscv_instr;
     `uvm_object_utils(riscv_u_instr)
 
@@ -265,6 +267,7 @@ class riscv_u_instr extends riscv_instr;
     endfunction
 
 endclass
+
 
 class riscv_fp_instr extends riscv_instr;
     `uvm_object_utils(riscv_fp_instr)
@@ -300,6 +303,7 @@ class riscv_fp_instr extends riscv_instr;
     endfunction
 
 endclass
+
 
 class riscv_fp_mem_instr extends riscv_instr;
     `uvm_object_utils(riscv_fp_mem_instr)
