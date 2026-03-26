@@ -1,8 +1,6 @@
-
 `include "uvm_macros.svh"
 import riscv_pkg::*;
 import uvm_pkg::*;
-
 class riscv_base_test extends uvm_test;
     `uvm_component_utils(riscv_base_test)
 
@@ -13,20 +11,28 @@ class riscv_base_test extends uvm_test;
         super.new(name, parent);
     endfunction
 
+  
     function void build_phase(uvm_phase phase);
        
+
+        // 1. Create config object
         cfg = riscv_env_config::type_id::create("cfg");
 
+        // 2. Pull vif from config_db (set by tb_top)
         if (!uvm_config_db #(virtual riscv_if)::get(this, "", "vif", vif))
             `uvm_fatal("NOVIF", "riscv_base_test: vif not in config_db")
         cfg.vif = vif;
 
+        // 3. Apply defaults — child overrides these before calling super
         apply_config();
 
+        // 4. Validate knobs
         cfg.validate();
 
+        // 5. Push into config_db so env + all children can get it
         uvm_config_db #(riscv_env_config)::set(this, "env*", "cfg", cfg);
 
+        // 6. Now build env (it will find cfg in config_db)
         super.build_phase(phase);
         env = riscv_env::type_id::create("env", this);
     endfunction
@@ -56,9 +62,7 @@ class riscv_base_test extends uvm_test;
 
 endclass
 
-// ===========================================================================
-// Smoke test – directed program from memfile.hex
-// ===========================================================================
+
 class riscv_smoke_test extends riscv_base_test;
     `uvm_component_utils(riscv_smoke_test)
 
@@ -95,9 +99,7 @@ class riscv_smoke_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// Fully random test – N random programs, no expected register values
-// ===========================================================================
+
 class riscv_random_test extends riscv_base_test;
     `uvm_component_utils(riscv_random_test)
 
@@ -107,11 +109,11 @@ class riscv_random_test extends riscv_base_test;
 
     function void apply_config();
         cfg.stim_mode         = riscv_env_config::RANDOM_PROGRAM;
-        cfg.num_instrs        = 80;
-        cfg.run_cycles        = 5000;
+        cfg.num_instrs        = 200;
+        cfg.run_cycles        = 50000;
         cfg.iterations        = 10;
-        cfg.enable_reg_checks = 0;   // no oracle for random
-        cfg.enable_mem_checks = 0;
+        cfg.enable_reg_checks = 1;   // no oracle for random
+        cfg.enable_mem_checks = 1;
         cfg.enable_ipc_check  = 1;
         cfg.min_ipc           = 0.20;
         cfg.verbosity         = UVM_MEDIUM;
@@ -126,9 +128,7 @@ class riscv_random_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// Integer ALU test – R-type + I-type heavy, no FP
-// ===========================================================================
+
 class riscv_int_alu_test extends riscv_base_test;
     `uvm_component_utils(riscv_int_alu_test)
 
@@ -138,18 +138,19 @@ class riscv_int_alu_test extends riscv_base_test;
 
     function void apply_config();
         cfg.stim_mode    = riscv_env_config::RANDOM_PROGRAM;
-        cfg.num_instrs   = 100;
-        cfg.run_cycles   = 2000;
+        cfg.num_instrs   = 200;
+        cfg.run_cycles   = 20000;
         cfg.w_r_type     = 35;
         cfg.w_i_alu      = 30;
         cfg.w_load       = 8;
         cfg.w_store      = 7;
+        cfg.enable_mem_checks = 1;
         cfg.w_branch     = 8;
         cfg.w_u_type     = 5;
         cfg.w_fp_arith   = 0;    // no FP
         cfg.w_fp_mem     = 0;
         cfg.min_ipc      = 0.50;
-        cfg.enable_reg_checks = 0;   // random program — no oracle
+        cfg.enable_reg_checks = 1;   // random program — no oracle
         cfg.enable_ipc_check  = 1;
         cfg.verbosity    = UVM_MEDIUM;
     endfunction
@@ -162,9 +163,7 @@ class riscv_int_alu_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// Load/Store test – memory-biased
-// ===========================================================================
+
 class riscv_load_store_test extends riscv_base_test;
     `uvm_component_utils(riscv_load_store_test)
 
@@ -174,8 +173,8 @@ class riscv_load_store_test extends riscv_base_test;
 
     function void apply_config();
         cfg.stim_mode          = riscv_env_config::RANDOM_PROGRAM;
-        cfg.num_instrs         = 100;
-        cfg.run_cycles         = 4000;
+        cfg.num_instrs         = 200;
+        cfg.run_cycles         = 40000;
         cfg.w_r_type           = 10;
         cfg.w_i_alu            = 10;
         cfg.w_load             = 25;
@@ -186,7 +185,8 @@ class riscv_load_store_test extends riscv_base_test;
         cfg.w_fp_mem           = 8;
         cfg.min_ipc            = 0.25;
         cfg.detailed_cache_stats = 1;
-        cfg.enable_reg_checks  = 0;
+        cfg.enable_reg_checks  = 1;
+        cfg.enable_mem_checks = 1;
         cfg.enable_ipc_check   = 1;
         cfg.verbosity          = UVM_MEDIUM;
     endfunction
@@ -199,9 +199,7 @@ class riscv_load_store_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// Branch test – branch-heavy random programs
-// ===========================================================================
+
 class riscv_branch_test extends riscv_base_test;
     `uvm_component_utils(riscv_branch_test)
 
@@ -211,8 +209,8 @@ class riscv_branch_test extends riscv_base_test;
 
     function void apply_config();
         cfg.stim_mode        = riscv_env_config::RANDOM_PROGRAM;
-        cfg.num_instrs       = 100;
-        cfg.run_cycles       = 5000;
+        cfg.num_instrs       = 200;
+        cfg.run_cycles       = 50000;
         cfg.w_r_type         = 15;
         cfg.w_i_alu          = 15;
         cfg.w_load           = 8;
@@ -223,7 +221,8 @@ class riscv_branch_test extends riscv_base_test;
         cfg.w_fp_mem         = 0;
         cfg.min_ipc          = 0.40;
         cfg.track_mispredicts = 1;
-        cfg.enable_reg_checks = 0;
+        cfg.enable_reg_checks = 1;
+        cfg.enable_mem_checks = 1;
         cfg.enable_ipc_check  = 1;
         cfg.verbosity        = UVM_MEDIUM;
     endfunction
@@ -236,9 +235,7 @@ class riscv_branch_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// FPU test – floating-point heavy
-// ===========================================================================
+
 class riscv_fpu_test extends riscv_base_test;
     `uvm_component_utils(riscv_fpu_test)
 
@@ -248,8 +245,8 @@ class riscv_fpu_test extends riscv_base_test;
 
     function void apply_config();
         cfg.stim_mode    = riscv_env_config::RANDOM_PROGRAM;
-        cfg.num_instrs   = 60;
-        cfg.run_cycles   = 8000;
+        cfg.num_instrs   = 200;
+        cfg.run_cycles   = 80000;
         cfg.w_r_type     = 5;
         cfg.w_i_alu      = 5;
         cfg.w_load       = 5;
@@ -259,7 +256,8 @@ class riscv_fpu_test extends riscv_base_test;
         cfg.w_fp_arith   = 35;
         cfg.w_fp_mem     = 12;
         cfg.min_ipc      = 0.08;
-        cfg.enable_reg_checks = 0;
+        cfg.enable_reg_checks = 1;   
+        cfg.enable_mem_checks = 1;
         cfg.enable_ipc_check  = 1;
         cfg.verbosity    = UVM_MEDIUM;
     endfunction
@@ -272,9 +270,7 @@ class riscv_fpu_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// Reset stress test
-// ===========================================================================
+
 class riscv_reset_stress_test extends riscv_base_test;
     `uvm_component_utils(riscv_reset_stress_test)
 
@@ -302,9 +298,7 @@ class riscv_reset_stress_test extends riscv_base_test;
 
 endclass
 
-// ===========================================================================
-// Regression test – runs all sequence types in sequence on one env
-// ===========================================================================
+
 class riscv_regression_test extends riscv_base_test;
     `uvm_component_utils(riscv_regression_test)
 
@@ -313,14 +307,14 @@ class riscv_regression_test extends riscv_base_test;
     endfunction
 
     function void apply_config();
-        // Start with random-program defaults;
-        // each sequence overrides what it needs via its own item constraints
+        
         cfg.stim_mode     = riscv_env_config::RANDOM_PROGRAM;
-        cfg.run_cycles    = 5000;
+        cfg.run_cycles    = 500000;
         cfg.min_ipc       = 0.0;    // checked per-sequence
-        cfg.enable_reg_checks = 0;
-        cfg.enable_ipc_check  = 1;
+        cfg.enable_ipc_check  = 0;
         cfg.track_mispredicts = 1;
+        cfg.enable_reg_checks = 1;
+        cfg.enable_mem_checks = 1;
         cfg.detailed_cache_stats = 1;
         cfg.verbosity     = UVM_LOW;
     endfunction
