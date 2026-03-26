@@ -5,10 +5,10 @@ import uvm_pkg::*;
 class riscv_program_gen extends uvm_object;
     `uvm_object_utils(riscv_program_gen)
 
-   
+    
     int unsigned num_instrs     = 50;     // total instructions to generate
     int unsigned data_base_reg  = 8;      // x8 used as base for loads/stores
-    int unsigned data_base_addr = 32'h10000000; // byte address of data region
+    int unsigned data_base_addr = 32'h00000400; // byte address of data region
 
     // Weights for instruction mix (out of 100)
     int unsigned w_r_type    = 25;
@@ -21,6 +21,7 @@ class riscv_program_gen extends uvm_object;
     int unsigned w_fp_mem    = 5;
     // remaining weight → NOP
 
+   
     logic [31:0] program_mem[];     // instruction words
     int unsigned actual_len;        // may differ from num_instrs after fixup
     int unsigned written_offsets[$]; // offsets written via stores (for safe load generation)
@@ -33,7 +34,7 @@ class riscv_program_gen extends uvm_object;
         super.new(name);
     endfunction
 
-  
+   
     function void generate_program();
         int unsigned total_w;
         program_mem = new[num_instrs + 20];  // +20: prologue=14 + epilogue=3 + margin=3
@@ -63,7 +64,7 @@ class riscv_program_gen extends uvm_object;
             UVM_MEDIUM)
     endfunction
 
-   
+    
     local function void emit_prologue();
         // LUI x8, data_base_addr[31:12]   → x8 = base address upper
         emit_word(lui_encode(data_base_reg, data_base_addr[31:12]),
@@ -81,7 +82,8 @@ class riscv_program_gen extends uvm_object;
                       $sformatf("ADDI   x%0d, x0, %0d", r, r));
         end
 
-      
+        // Store a known float (1.0 = 0x3F800000) to data memory for FLW tests
+        // LUI x9, 0x3F800       → x9 = 0x3F800000
         emit_word(lui_encode(9, 20'h3F800),    "LUI    x9, 0x3F800  # 1.0f");
         // SW  x9, 0(x8)
         emit_word(sw_encode(data_base_reg, 9, 12'd0),
@@ -95,9 +97,24 @@ class riscv_program_gen extends uvm_object;
         // FLW f0, 0(x8)  ;  FLW f1, 4(x8)
         emit_word(flw_encode(0, data_base_reg, 12'd0), "FLW    f0, 0(x8)");
         emit_word(flw_encode(1, data_base_reg, 12'd4), "FLW    f1, 4(x8)");
+
+        // f2 = smallest normal (0x00800000 = 2^-126)
+        emit_word(lui_encode(11, 20'h00800), "LUI x11, 0x00800  # smallest normal hi");
+        emit_word(sw_encode(data_base_reg, 11, 12'd8), "SW x11, 8(x8)");
+        emit_word(flw_encode(2, data_base_reg, 12'd8), "FLW f2, 8(x8)");
+
+        // f3 = large normal near overflow (0x7F000000)
+        emit_word(lui_encode(12, 20'h7F000), "LUI x12, 0x7F000");
+        emit_word(sw_encode(data_base_reg, 12, 12'd12), "SW x12, 12(x8)");
+        emit_word(flw_encode(3, data_base_reg, 12'd12), "FLW f3, 12(x8)");
+
+        // f4 = -1.0 (0xBF800000)
+        emit_word(lui_encode(13, 20'hBF800), "LUI x13, 0xBF800");
+        emit_word(sw_encode(data_base_reg, 13, 12'd16), "SW x13, 16(x8)");
+        emit_word(flw_encode(4, data_base_reg, 12'd16), "FLW f4, 16(x8)");
     endfunction
 
-   
+  
     local function void emit_epilogue();
         // LUI x30, 0x0DEAE  (NOT 0x0DEAD — see comment above)
         emit_word(lui_encode(30, 20'h0DEAE),  "LUI    x30, 0x0DEAE  # sentinel hi (compensated)");
@@ -108,7 +125,7 @@ class riscv_program_gen extends uvm_object;
         emit_word(32'h0000006F,               "JAL    x0, 0  # infinite loop");
     endfunction
 
-   
+    
     local function void emit_random_instr();
         int pick;
         pick = $urandom_range(0, 99);
@@ -124,7 +141,7 @@ class riscv_program_gen extends uvm_object;
         else    emit_nop();
     endfunction
 
-  
+   
     local function void emit_r_type();
         riscv_r_instr instr = riscv_r_instr::type_id::create("r");
         if (!instr.randomize() with {
@@ -180,18 +197,24 @@ class riscv_program_gen extends uvm_object;
             written_offsets.push_back(int'(instr.imm12));
     endfunction
 
-    local function void emit_branch();
-        riscv_branch_instr instr = riscv_branch_instr::type_id::create("br");
-        if (!instr.randomize() with {
-            rs1 inside {[1:7]};
-            rs2 inside {[1:7]};
-            // Only forward short branches so we don't jump out of program
-            offset inside {4};
-            offset[0] == 0;
-        }) `uvm_fatal("PGEN","Branch randomize failed")
-        instr.encode();
-        emit_word(instr.bits, instr.to_asm());
-    endfunction
+   local function void emit_branch();
+    riscv_branch_instr instr = riscv_branch_instr::type_id::create("br");
+    
+    // How many instructions remain before the epilogue
+    int unsigned remaining = (num_instrs - (actual_len - 14)); // 14 = prologue length
+    int unsigned max_offset = (remaining > 1) ? ((remaining - 1) * 4) : 4;
+    // Cap to a reasonable window so branches aren't always huge
+    if (max_offset > 32) max_offset = 32;
+
+    if (!instr.randomize() with {
+        rs1 inside {[1:7]};
+        rs2 inside {[1:7]};
+        offset inside {[0:max_offset]};
+        offset % 4 == 0;
+    }) `uvm_fatal("PGEN","Branch randomize failed")
+    instr.encode();
+    emit_word(instr.bits, instr.to_asm());
+endfunction
 
     local function void emit_u_type();
         riscv_u_instr instr = riscv_u_instr::type_id::create("u");
@@ -206,8 +229,8 @@ class riscv_program_gen extends uvm_object;
         riscv_fp_instr instr = riscv_fp_instr::type_id::create("fp");
         if (!instr.randomize() with {
             rd  inside {[2:7]};
-            rs1 inside {[0:1]};   // f0=1.0 f1=2.0 loaded in prologue
-            rs2 inside {[0:1]};
+            rs1 inside {[0:4]};   // f0=1.0 f1=2.0 loaded in prologue
+            rs2 inside {[0:4]};
             // Avoid FDIV/FSQRT most of the time (very slow)
             func dist { riscv_fp_instr::FADD := 35,
                         riscv_fp_instr::FSUB := 35,
@@ -236,9 +259,7 @@ class riscv_program_gen extends uvm_object;
         emit_word(32'h00000013, "NOP");
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Low-level helpers
-    // -----------------------------------------------------------------------
+   
     local function void emit_word(logic [31:0] w, string comment = "");
         program_mem[actual_len] = w;
         asm_listing.push_back($sformatf("[%04d] %08h  %s", actual_len, w, comment));
@@ -263,9 +284,7 @@ class riscv_program_gen extends uvm_object;
         return {imm, 5'(rs1), 3'b010, 5'(rd_fp), 7'b0000111};
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Write generated program into DUT instruction memory (backdoor)
-    // -----------------------------------------------------------------------
+  
     task backdoor_load(ref logic [31:0] imem[]);
         for (int i = 0; i < actual_len && i < imem.size(); i++)
             imem[i] = program_mem[i];
@@ -276,9 +295,7 @@ class riscv_program_gen extends uvm_object;
             $sformatf("Loaded %0d instructions into IMEM", actual_len), UVM_LOW)
     endtask
 
-    // -----------------------------------------------------------------------
-    // Write generated program to a .hex file (for $readmemh)
-    // -----------------------------------------------------------------------
+   
     function void write_hex(string filename);
         int fd;
         fd = $fopen(filename, "w");
@@ -292,9 +309,7 @@ class riscv_program_gen extends uvm_object;
         `uvm_info("PGEN", $sformatf("Wrote hex to %s", filename), UVM_LOW)
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Print disassembly listing
-    // -----------------------------------------------------------------------
+   
     function void print_listing();
         `uvm_info("PGEN", "\n=== Generated Program Listing ===", UVM_LOW)
         foreach (asm_listing[i])
