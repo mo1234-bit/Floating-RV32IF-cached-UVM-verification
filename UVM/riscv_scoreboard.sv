@@ -1,8 +1,6 @@
-
 `include "uvm_macros.svh"
 import riscv_pkg::*;
 import uvm_pkg::*;
-
 class riscv_scoreboard extends uvm_scoreboard;
     `uvm_component_utils(riscv_scoreboard)
 
@@ -22,6 +20,10 @@ class riscv_scoreboard extends uvm_scoreboard;
     int unsigned pass_count;
     int unsigned fail_count;
     int unsigned check_count;
+
+    // Prologue in-flight checking
+    int unsigned reg_write_count;       // counts write_reg calls
+    bit          prologue_checked;      // fires prologue check exactly once
 
     function new(string name, uvm_component parent);
         super.new(name, parent);
@@ -47,18 +49,24 @@ class riscv_scoreboard extends uvm_scoreboard;
         foreach (shadow_fp[i])  shadow_fp[i]  = 0;
         shadow_mem.delete();
         pass_count = 0; fail_count = 0; check_count = 0;
+        reg_write_count = 0; prologue_checked = 0;
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Write callbacks — update shadow models
-    // -----------------------------------------------------------------------
+   
     function void write_reg(reg_write_txn t);
-        if (!t.is_fp) begin
-            if (t.rd != 0) shadow_int[t.rd] = t.data;
-        end else begin
-            shadow_fp[t.rd] = t.data;
-        end
-    endfunction
+    if (!t.is_fp) begin
+        if (t.rd != 0) shadow_int[t.rd] = t.data;
+    end else begin
+        shadow_fp[t.rd] = t.data;
+    end
+    reg_write_count++;
+    // Only check prologue for random programs — directed hex has no fixed prologue
+    if (!prologue_checked && reg_write_count >= 14 &&
+        cfg.stim_mode == riscv_env_config::RANDOM_PROGRAM) begin
+        prologue_checked = 1;
+        check_prologue_regs();
+    end
+endfunction
 
     function void write_mem(mem_txn t);
         if (t.is_write) shadow_mem[bit'(t.addr)] = t.data;
@@ -68,19 +76,18 @@ class riscv_scoreboard extends uvm_scoreboard;
         // Accumulated in monitor; no per-branch action needed here
     endfunction
 
-    // -----------------------------------------------------------------------
-    // Final check triggered by monitor publish_stats()
-    // -----------------------------------------------------------------------
+ 
     function void write_stats(pipeline_stats_txn s);
         `uvm_info("SB", $sformatf("\n%s", s.convert2string()), UVM_LOW)
 
         if (expected == null) begin
-            `uvm_info("SB","No expected item set; skipping value checks.",UVM_MEDIUM)
+            `uvm_info("SB","No exp_int_regs set — skipping end-of-program register check.",UVM_MEDIUM)
         end else begin
             if (cfg.enable_reg_checks) check_registers();
             if (cfg.enable_mem_checks) check_memory();
-            if (cfg.enable_ipc_check)  check_ipc(s);
         end
+        // IPC check runs for all tests that have a min_ipc threshold
+        if (cfg.enable_ipc_check) check_ipc(s);
 
         // Structural checks always run (don't need an expected item)
         check_x0_zero();
@@ -143,6 +150,46 @@ class riscv_scoreboard extends uvm_scoreboard;
                 $sformatf("IPC PASS: %.3f >= %.3f", s.ipc, effective_min), UVM_LOW)
             pass_count++;
         end
+    endfunction
+
+   
+    function void check_prologue_regs();
+        // x1-x7: known seed values
+        for (int r = 1; r <= 7; r++) begin
+            check_count++;
+            if (shadow_int[r] !== 32'(r)) begin
+                `uvm_error("SB", $sformatf(
+                    "PROLOGUE FAIL x%0d: got=0x%08h exp=0x%08h (after prologue)",
+                    r, shadow_int[r], 32'(r)))
+                fail_count++;
+            end else pass_count++;
+        end
+        // x8: base address (prologue uses LUI only for upper 20 bits; lower 12=0)
+        check_count++;
+        if (shadow_int[8] !== 32'h10000000) begin
+            `uvm_error("SB", $sformatf(
+                "PROLOGUE FAIL x8: got=0x%08h exp=0x10000000 (data base ptr)",
+                shadow_int[8]))
+            fail_count++;
+        end else pass_count++;
+        // x9 = 1.0f, x10 = 2.0f
+        check_count++;
+        if (shadow_int[9] !== 32'h3F800000) begin
+            `uvm_error("SB", $sformatf(
+                "PROLOGUE FAIL x9: got=0x%08h exp=0x3F800000 (1.0f seed)",
+                shadow_int[9]))
+            fail_count++;
+        end else pass_count++;
+        check_count++;
+        if (shadow_int[10] !== 32'h40000000) begin
+            `uvm_error("SB", $sformatf(
+                "PROLOGUE FAIL x10: got=0x%08h exp=0x40000000 (2.0f seed)",
+                shadow_int[10]))
+            fail_count++;
+        end else pass_count++;
+        `uvm_info("SB", $sformatf(
+            "Prologue check done: %0d passed, %0d failed",
+            pass_count, fail_count), UVM_MEDIUM)
     endfunction
 
     function void check_x0_zero();
