@@ -8,7 +8,7 @@ class riscv_driver extends uvm_driver #(riscv_seq_item);
     virtual riscv_if   vif;
     riscv_env_config   cfg;
     riscv_program_gen  prog_gen;
-
+    riscv_monitor     mon;
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -46,6 +46,9 @@ class riscv_driver extends uvm_driver #(riscv_seq_item);
     // -----------------------------------------------------------------------
     task drive_item(riscv_seq_item item);
         // Assert reset
+        // Reset monitor counters for this program run
+    uvm_config_db#(riscv_monitor)::get(this, "", "monitor_handle", mon);
+    if (mon != null) mon.reset_for_new_program();
         vif.drv_cb.rst_n <= 1'b0;
         repeat(item.reset_cycles) @(vif.drv_cb);
 
