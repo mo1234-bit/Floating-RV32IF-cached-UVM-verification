@@ -1,13 +1,9 @@
 `include "uvm_macros.svh"
 import riscv_pkg::*;
 import uvm_pkg::*;
-
 class riscv_seq_item extends uvm_sequence_item;
     `uvm_object_utils(riscv_seq_item)
 
-    // -----------------------------------------------------------------------
-    // Stimulus mode
-    // -----------------------------------------------------------------------
     typedef enum { RANDOM_PROGRAM, HEX_FILE } stim_mode_e;
     rand stim_mode_e stim_mode;
 
@@ -32,20 +28,16 @@ class riscv_seq_item extends uvm_sequence_item;
     rand int unsigned run_cycles;
     rand int unsigned reset_cycles;
 
-    // -----------------------------------------------------------------------
-    // Expected outcomes
-    // -----------------------------------------------------------------------
+   
     logic [31:0] exp_int_regs[32];
     logic [31:0] exp_fp_regs[32];
     logic [31:0] exp_mem[bit [31:0]];   // bit (2-state) index — legal in SV
     real         min_ipc;
 
-    // -----------------------------------------------------------------------
-    // Constraints
-    // -----------------------------------------------------------------------
-    constraint c_cycles      { run_cycles   inside {[500:15000]}; }
+   
+    constraint c_cycles      { run_cycles   inside {[0:1000000]}; }
     constraint c_reset       { reset_cycles inside {[3:8]};       }
-    constraint c_num_instrs  { num_instrs   inside {[20:200]};    }
+    constraint c_num_instrs  { num_instrs   inside {[1:200]};    }
 
     constraint c_weights {
         // Soft constraints — sequence-level overrides (e.g. w_fp_arith==0)
