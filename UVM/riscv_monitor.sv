@@ -1,4 +1,3 @@
-
 `include "uvm_macros.svh"
 import riscv_pkg::*;
 import uvm_pkg::*;
@@ -77,7 +76,7 @@ class riscv_monitor extends uvm_monitor;
     int unsigned branch_count;
     int unsigned mispredicts;
     int unsigned cache_misses;
-    logic en=0;
+    logic en;
     function new(string name, uvm_component parent);
         super.new(name, parent);
     endfunction
@@ -125,9 +124,7 @@ class riscv_monitor extends uvm_monitor;
             if (!vif.mon_cb.rst_n) continue;
             if(vif.InstrDM==32'h0000006F)
                 en=1;
-            // Only count cycles while the program is still running.
-            // Once InstrD goes X the pipeline is fetching past the end
-            // of IMEM — those idle cycles must not inflate the IPC denominator.
+            
             if (en!=1'd1)
                 total_cycles++;
 
@@ -141,8 +138,7 @@ class riscv_monitor extends uvm_monitor;
 
             if (vif.mon_cb.FRegWriteMW) begin
                 reg_write_txn t = reg_write_txn::type_id::create("frwt");
-                // BUG 7 FIX: FP destination is FRdW, not RDW (integer dest).
-                t.rd   = vif.mon_cb.FRdW;
+                t.rd   = vif.mon_cb.RDW;
                 t.data = vif.mon_cb.FResultW;
                 t.is_fp = 1;
                 ap_reg_write.write(t);
@@ -237,4 +233,7 @@ class riscv_monitor extends uvm_monitor;
         `uvm_info("MON", s.convert2string(), UVM_LOW)
     endfunction
 
+   task reset_for_new_program();
+    en = 0;
+endtask
 endclass : riscv_monitor
