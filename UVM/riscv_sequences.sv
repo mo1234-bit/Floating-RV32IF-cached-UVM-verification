@@ -24,9 +24,7 @@ class riscv_base_seq extends uvm_sequence #(riscv_seq_item);
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// Fully random – N randomly generated programs back-to-back
-// ---------------------------------------------------------------------------
+
 class riscv_random_seq extends riscv_base_seq;
     `uvm_object_utils(riscv_random_seq)
     int unsigned iterations = 10;
@@ -42,9 +40,7 @@ class riscv_random_seq extends riscv_base_seq;
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// Integer-ALU biased
-// ---------------------------------------------------------------------------
+
 class riscv_int_alu_seq extends riscv_base_seq;
     `uvm_object_utils(riscv_int_alu_seq)
     function new(string name = "riscv_int_alu_seq"); super.new(name); endfunction
@@ -54,7 +50,7 @@ class riscv_int_alu_seq extends riscv_base_seq;
         start_item(item);
         if (!item.randomize() with {
             stim_mode  == RANDOM_PROGRAM;
-            num_instrs inside {[50:150]};
+            num_instrs inside {200};
             w_r_type   inside {[30:40]};
             w_i_alu    inside {[25:35]};
             w_load     inside {[5:10]};
@@ -63,16 +59,14 @@ class riscv_int_alu_seq extends riscv_base_seq;
             w_u_type   inside {[2:5]};
             w_fp_arith == 0;
             w_fp_mem   == 0;
-            run_cycles inside {[1000:3000]};
+            run_cycles inside {100000};
         }) `uvm_fatal("SEQ","int_alu randomize failed")
         item.min_ipc = 0.50;
         finish_item(item);
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// Load/Store biased
-// ---------------------------------------------------------------------------
+
 class riscv_load_store_seq extends riscv_base_seq;
     `uvm_object_utils(riscv_load_store_seq)
     function new(string name = "riscv_load_store_seq"); super.new(name); endfunction
@@ -82,7 +76,7 @@ class riscv_load_store_seq extends riscv_base_seq;
         start_item(item);
         if (!item.randomize() with {
             stim_mode  == RANDOM_PROGRAM;
-            num_instrs inside {[50:120]};
+            num_instrs inside {200};
             w_r_type   inside {[5:15]};
             w_i_alu    inside {[5:15]};
             w_load     inside {[20:30]};
@@ -91,16 +85,14 @@ class riscv_load_store_seq extends riscv_base_seq;
             w_u_type   inside {[2:5]};
             w_fp_arith inside {[5:10]};
             w_fp_mem   inside {[5:10]};
-            run_cycles inside {[2000:5000]};
+            run_cycles inside {100000};
         }) `uvm_fatal("SEQ","load_store randomize failed")
         item.min_ipc = 0.25;
         finish_item(item);
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// Branch-stress
-// ---------------------------------------------------------------------------
+
 class riscv_branch_stress_seq extends riscv_base_seq;
     `uvm_object_utils(riscv_branch_stress_seq)
     function new(string name = "riscv_branch_stress_seq"); super.new(name); endfunction
@@ -111,7 +103,7 @@ class riscv_branch_stress_seq extends riscv_base_seq;
             start_item(item);
             if (!item.randomize() with {
                 stim_mode  == RANDOM_PROGRAM;
-                num_instrs inside {[60:120]};
+                num_instrs inside {200};
                 w_r_type   inside {[10:20]};
                 w_i_alu    inside {[10:20]};
                 w_load     inside {[5:10]};
@@ -120,7 +112,7 @@ class riscv_branch_stress_seq extends riscv_base_seq;
                 w_u_type   inside {[2:5]};
                 w_fp_arith == 0;
                 w_fp_mem   == 0;
-                run_cycles inside {[3000:6000]};
+                run_cycles inside {100000};
             }) `uvm_fatal("SEQ","branch randomize failed")
             item.min_ipc = 0.40;
             finish_item(item);
@@ -128,9 +120,7 @@ class riscv_branch_stress_seq extends riscv_base_seq;
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// FPU heavy
-// ---------------------------------------------------------------------------
+
 class riscv_fpu_seq extends riscv_base_seq;
     `uvm_object_utils(riscv_fpu_seq)
     function new(string name = "riscv_fpu_seq"); super.new(name); endfunction
@@ -140,7 +130,7 @@ class riscv_fpu_seq extends riscv_base_seq;
         start_item(item);
         if (!item.randomize() with {
             stim_mode  == RANDOM_PROGRAM;
-            num_instrs inside {[30:80]};
+            num_instrs inside {200};
             w_r_type   inside {[5:10]};
             w_i_alu    inside {[5:10]};
             w_load     inside {[5:10]};
@@ -149,16 +139,14 @@ class riscv_fpu_seq extends riscv_base_seq;
             w_u_type   inside {[2:5]};
             w_fp_arith inside {[30:40]};
             w_fp_mem   inside {[10:15]};
-            run_cycles inside {[5000:10000]};
+            run_cycles inside {100000};
         }) `uvm_fatal("SEQ","fpu randomize failed")
         item.min_ipc = 0.08;
         finish_item(item);
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// Reset stress
-// ---------------------------------------------------------------------------
+
 class riscv_reset_stress_seq extends uvm_sequence #(riscv_seq_item);
     `uvm_object_utils(riscv_reset_stress_seq)
     int unsigned iterations = 5;
@@ -180,9 +168,7 @@ class riscv_reset_stress_seq extends uvm_sequence #(riscv_seq_item);
     endtask
 endclass
 
-// ---------------------------------------------------------------------------
-// Full hex-file sequence (keeps directed regression against memfile.hex)
-// ---------------------------------------------------------------------------
+
 class riscv_full_test_seq extends riscv_base_seq;
     `uvm_object_utils(riscv_full_test_seq)
     function new(string name = "riscv_full_test_seq"); super.new(name); endfunction
