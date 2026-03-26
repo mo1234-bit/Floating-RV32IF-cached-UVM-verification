@@ -1,9 +1,12 @@
 `timescale 1ns/1ps
 interface riscv_if (input logic clk);
 
+    
     logic        rst_n;
     logic [15:0] Result;
 
+    
+    // Fetch stage
     logic [31:0] InstrD;
     logic [31:0] PCD;
     logic [31:0] PCPlus4D;
@@ -31,17 +34,18 @@ interface riscv_if (input logic clk);
     logic [4:0]  RDW;
     logic [31:0] ResultW;
 
-    // Hazard / stall / flush
+   
     logic        StallF;
     logic        StallD;
     logic        FlushE;
     logic        mispredict;
     logic        stall;         // FPU stall
 
-    // Floating-point write-back
+   
     logic        FRegWriteMW;
     logic [31:0] FResultW;
-    logic [4:0]  FRdW;       
+
+    
     logic        faddE;
     logic        fsubE;
     logic        fmulE;
@@ -53,7 +57,7 @@ interface riscv_if (input logic clk);
     // Cache state
     logic [2:0]  cache_state;
 
-  
+   
     clocking drv_cb @(posedge clk);
         default input #1 output #1;
         output rst_n;
@@ -82,7 +86,6 @@ interface riscv_if (input logic clk);
         input cache_state;
         input FRegWriteMW;
         input FResultW;
-        input FRdW;
         input faddE;
         input fsubE;
         input fmulE;
